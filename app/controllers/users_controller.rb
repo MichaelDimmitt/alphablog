@@ -1,75 +1,117 @@
 class UsersController < ApplicationController
 
- before_action :set_user, only: [:edit, :update, :show]
+	before_action :set_user, only: [:edit, :update, :show]
 
-def index
+	before_action :require_same_user, only: [:edit, :update, :destroy]
 
-@users = User.paginate(page: params[:page], per_page: 5)
+	before_action :require_admin, only: [:destroy]
 
-end
+	def index
 
-def new
+		@users = User.paginate(page: params[:page], per_page: 5)
 
-@user = User.new
+	end
 
-end
+	def new
 
-def create
+		@user = User.new
 
-@user = User.new(user_params)
+	end
 
-if @user.save
+	def create
 
-flash[:success] = "Welcome to the alpha blog #{@user.username}"
+		@user = User.new(user_params)
 
-redirect_to articles_path
+		if @user.save
 
-else
+			session[:user_id] = @user.id
 
-render 'new'
+			flash[:success] = "Welcome to the alpha blog #{@user.username}"
 
-end
+			redirect_to user_path(@user)
 
-end
+		else
 
-def edit
+			render 'new'
 
-end
+		end
 
-def update
+	end
 
-if @user.update(user_params)
+	def edit
 
-flash[:success] = "Your account was updated successfully"
+	end
 
-redirect_to articles_path
+	def update
 
-else
+		if @user.update(user_params)
 
-render 'edit'
+			flash[:success] = "Your account was updated successfully"
 
-end
+			redirect_to articles_path
 
-end
+		else
 
-def show
+			render 'edit'
 
-@user_articles = @user.articles.paginate(page: params[:page], per_page: 5)
+		end
 
-end
+	end
 
-private
+	def show
 
-def user_params
+		@user_articles = @user.articles.paginate(page: params[:page], per_page: 5)
 
-params.require(:user).permit(:username, :email, :password)
+	end
 
-end
+	def destroy
 
-def set_user
+		@user = User.find(params[:id])
 
-@user = User.find(params[:id])
+		@user.destroy
 
-end
+		flash[:danger] = "User and all articles created by user have been deleted"
+
+		redirect_to users_path
+
+	end
+
+	private
+
+	def user_params
+
+		params.require(:user).permit(:username, :email, :password)
+
+	end
+
+	def set_user
+
+		@user = User.find(params[:id])
+
+	end
+
+	def require_same_user
+
+		if current_user != @user and !current_user.admin?
+
+			flash[:danger] = "You can only edit your own account"
+
+			redirect_to root_path
+
+		end
+
+	end
+
+	def require_admin
+
+		if logged_in? and !current_user.admin?
+
+			flash[:danger] = "Only admin users can perform that action"
+
+			redirect_to root_path
+
+		end
+
+	end
 
 end
