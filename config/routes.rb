@@ -14,5 +14,4 @@ delete 'logout', to: 'sessions#destroy'
 
 resources :categories, except: [:destroy]
 
-
 end
